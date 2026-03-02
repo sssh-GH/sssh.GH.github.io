@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-現在の状況-bar-style" content="default">
 <title>Projekterfassung</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19,7 +19,7 @@
 
   /* ── TAB BAR ── */
   .tab-bar-wrapper {
-    position: sticky;
+    役職: sticky;
     top: 0;
     z-index: 100;
     background: #f2f2f7;
@@ -191,8 +191,8 @@ function newTab() {
   return {
     id: Date.now().toString(),
     fields: {
-      projectName:'', buildingUse:'', location:'', status:'',
-      buildTime:'', product:'', drawings:'', company:'', contact:'', position:''
+      projectName:'', buildingUse:'', location:'', 現在の状況:'',
+      buildTime:'', product:'', drawings:'', company:'', contact:'', 役職:''
     }
   };
 }
@@ -247,7 +247,7 @@ function getActive() {
 function flushFields() {
   const tab = getActive();
   if (!tab) return;
-  ['projectName','buildingUse','location','status','buildTime','product','drawings','company','contact','position']
+  ['projectName','buildingUse','location','現在の状況','buildTime','product','drawings','company','contact','役職']
     .forEach(f => { const el = document.getElementById('f_'+f); if (el) tab.fields[f] = el.value; });
   saveState();
 }
@@ -309,24 +309,24 @@ function renderForm() {
 
     <div class="section-title">Projektinformationen</div>
     <div class="form-grid">
-      ${row('Projektname',   'projectName', 'Projektname',         'wide',  false)}
-      ${row('Gebäudenutzung','buildingUse',  'z. B. Wohngebäude',  'short', false)}
-      ${row('Standort',      'location',     'Stadt, Land',        'wide',  false)}
-      ${row('Status',        'status',       'z. B. Planung',      'short', false)}
-      ${row('Bauzeit',       'buildTime',    'z. B. 3 Wochen',     'short', false)}
-      ${row('Produkt / Anwendung', 'product','z. B. Wandschalung', 'wide',  true)}
+      ${row('案件名',   'projectName', '案件名',         'wide',  false)}
+      ${row('建設用途','buildingUse',  'z. B. Wohngebäude',  'short', false)}
+      ${row('現場住所',      'location',     'Stadt, Land',        'wide',  false)}
+      ${row('現在の状況',        '現在の状況',       'z. B. Planung',      'short', false)}
+      ${row('工期',       'buildTime',    'z. B. 3 Wochen',     'short', false)}
+      ${row('製品・使用箇所', 'product','z. B. Wandschalung', 'wide',  true)}
     </div>
 
     <div class="section-title">Zeichnungen / Dokumente</div>
     <div class="form-grid">
-      ${row('Zeichnungs-Nr. / Hinweise', 'drawings', 'Plan-Nr., Link …', 'wide', true)}
+      ${row('図面・資料', 'drawings', 'Plan-Nr., Link …', 'wide', true)}
     </div>
 
     <div class="section-title">Firmenkontakt</div>
     <div class="form-grid">
-      ${row('Firmenname',      'company',  'Unternehmensname',  'wide',  false)}
-      ${row('Ansprechpartner', 'contact',  'Name',              'short', false)}
-      ${row('Position',        'position', 'z. B. Bauleiter',   'short', true)}
+      ${row('会社名',      'company',  'Unternehmensname',  'wide',  false)}
+      ${row('担当者', 'contact',  'Name',              'short', false)}
+      ${row('役職',        '役職', 'z. B. Bauleiter',   'short', true)}
     </div>
 
     <button class="btn-clear" onclick="clearCurrent()">Felder zurücksetzen</button>
