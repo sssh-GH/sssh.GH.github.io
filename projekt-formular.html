@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="robots" content="noindex, nofollow">
+<title>案件情報入力</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #fff;
+    color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+  }
+
+  .tab-bar-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #f2f2f7;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .tab-bar {
+    display: flex;
+    align-items: flex-end;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 10px 0;
+    gap: 5px;
+    scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #e0e0e6;
+    border-radius: 8px 8px 0 0;
+    padding: 6px 10px 6px 12px;
+    font-size: 12px;
+    color: #555;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    max-width: 140px;
+  }
+  .tab.active { background: #fff; color: #333; font-weight: 600; }
+  .tab-name { overflow: hidden; text-overflow: ellipsis; max-width: 95px; }
+  .tab-close {
+    font-size: 14px;
+    color: #aaa;
+    padding: 0 2px;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab-add {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #888;
+    padding: 2px 8px 7px;
+    cursor: pointer;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .form-area {
+    padding: 12px 14px 30px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .row-label {
+    font-size: 11px;
+    color: #888;
+    padding: 8px 8px 8px 12px;
+    white-space: nowrap;
+    background: #fafafa;
+    border-bottom: 1px solid #eee;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+  }
+
+  .row-input {
+    border: none;
+    border-bottom: 1px solid #eee;
+    border-left: 1px solid #eee;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: #333;
+    font-family: inherit;
+    background: #fff;
+    outline: none;
+    width: 100%;
+    -webkit-appearance: none;
+    min-width: 0;
+  }
+  .row-input::placeholder { color: #ccc; }
+  .row-input:focus { background: #fffef5; }
+
+  .section-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #aaa;
+    margin: 12px 0 5px 2px;
+  }
+
+  .btn-clear {
+    width: 100%;
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    color: #aaa;
+    font-family: inherit;
+    cursor: pointer;
+    margin-top: 10px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-clear:active { background: #f5f5f5; }
+
+  .saved-note {
+    font-size: 11px;
+    color: #bbb;
+    text-align: center;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="tab-bar-wrapper">
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-add" onclick="addTab()">＋</button>
+  </div>
+</div>
+
+<div id="formContainer"></div>
+
+<script>
+const STORAGE_KEY = 'projekterfassung_v2';
+
+function loadState() {
+  try { const r = localStorage.getItem(STORAGE_KEY); if (r) return JSON.parse(r); } catch(e) {}
+  return { tabs: [], activeId: null };
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+let state = loadState();
+
+function newTab() {
+  return {
+    id: Date.now().toString(),
+    fields: {
+      projectName:'', buildingUse:'', location:'', status:'',
+      buildTime:'', product:'', drawings:'', company:'', contact:'', position:''
+    }
+  };
+}
+
+if (!state.tabs.length) {
+  const t = newTab();
+  state.tabs.push(t);
+  state.activeId = t.id;
+  saveState();
+}
+
+function addTab() {
+  flushFields();
+  const t = newTab();
+  state.tabs.push(t);
+  state.activeId = t.id;
+  saveState();
+  render();
+  setTimeout(() => {
+    const bar = document.getElementById('tabBar');
+    bar.scrollLeft = bar.scrollWidth;
+  }, 50);
+}
+
+function switchTab(id) {
+  flushFields();
+  state.activeId = id;
+  saveState();
+  render();
+}
+
+function closeTab(id) {
+  const tab = state.tabs.find(t => t.id === id);
+  const label = (tab && tab.fields.projectName.trim()) || '新規案件';
+  if (state.tabs.length === 1) {
+    if (!confirm('フィールドをリセットしますか？')) return;
+    state.tabs[0] = newTab();
+    state.activeId = state.tabs[0].id;
+    saveState(); render(); return;
+  }
+  if (!confirm('「' + label + '」を削除しますか？')) return;
+  const idx = state.tabs.findIndex(t => t.id === id);
+  state.tabs.splice(idx, 1);
+  if (state.activeId === id) state.activeId = state.tabs[Math.max(0, idx-1)].id;
+  saveState(); render();
+}
+
+function getActive() {
+  return state.tabs.find(t => t.id === state.activeId) || state.tabs[0];
+}
+
+function flushFields() {
+  const tab = getActive();
+  if (!tab) return;
+  ['projectName','buildingUse','location','status','buildTime','product','drawings','company','contact','position']
+    .forEach(f => { const el = document.getElementById('f_'+f); if (el) tab.fields[f] = el.value; });
+  saveState();
+}
+
+let saveTimer = null;
+function autosave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushFields, 400);
+}
+
+function onNameInput() {
+  const tab = getActive();
+  const el = document.getElementById('f_projectName');
+  if (el && tab) tab.fields.projectName = el.value;
+  renderTabs();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 400);
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderTabs() {
+  const bar = document.getElementById('tabBar');
+  const addBtn = bar.querySelector('.tab-add');
+  bar.innerHTML = '';
+  state.tabs.forEach(tab => {
+    const label = tab.fields.projectName.trim() || '新規案件';
+    const el = document.createElement('div');
+    el.className = 'tab' + (tab.id === state.activeId ? ' active' : '');
+    el.innerHTML = '<span class="tab-name">' + esc(label) + '</span><span class="tab-close" data-id="' + tab.id + '">×</span>';
+    el.addEventListener('click', e => {
+      if (e.target.classList.contains('tab-close')) closeTab(tab.id);
+      else switchTab(tab.id);
+    });
+    bar.appendChild(el);
+  });
+  bar.appendChild(addBtn);
+}
+
+function renderForm() {
+  const tab = getActive();
+  const f = tab.fields;
+
+  function row(label, id, isLast) {
+    const bs = isLast ? 'border-bottom:none;' : '';
+    const oninput = id === 'projectName' ? 'onNameInput()' : 'autosave()';
+    return '<div class="row-label" style="' + bs + '">' + label + '</div>' +
+           '<input class="row-input" id="f_' + id + '" value="' + esc(f[id]) + '" style="' + bs + '" oninput="' + oninput + '" />';
+  }
+
+  document.getElementById('formContainer').innerHTML =
+    '<div class="form-area">' +
+
+    '<div class="section-title">案件情報</div>' +
+    '<div class="form-grid">' +
+      row('案件名',         'projectName', false) +
+      row('用途',           'buildingUse', false) +
+      row('所在地',         'location',    false) +
+      row('現在の状況',     'status',      false) +
+      row('工期',           'buildTime',   false) +
+      row('製品・使用箇所', 'product',     true) +
+    '</div>' +
+
+    '<div class="section-title">図面・資料</div>' +
+    '<div class="form-grid">' +
+      row('図面・資料', 'drawings', true) +
+    '</div>' +
+
+    '<div class="section-title">担当者情報</div>' +
+    '<div class="form-grid">' +
+      row('会社名', 'company',  false) +
+      row('担当者', 'contact',  false) +
+      row('役職',   'position', true) +
+    '</div>' +
+
+    '<button class="btn-clear" onclick="clearCurrent()">フィールドをリセット</button>' +
+    '<p class="saved-note">自動保存されます</p>' +
+    '</div>';
+}
+
+function render() { renderTabs(); renderForm(); }
+
+function clearCurrent() {
+  if (!confirm('すべてのフィールドをリセットしますか？')) return;
+  const tab = getActive();
+  Object.keys(tab.fields).forEach(k => tab.fields[k] = '');
+  saveState(); render();
+}
+
+render();
+</script>
+</body>
+</html>
